@@ -1,0 +1,127 @@
+{% extends "simple/base.html" %}
+
+{% block title %}Заказы - Система управления кафе{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Заказы</h1>
+            <a href="{{ url_for('new_order') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Новый заказ
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтр по статусу -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('orders', status='all') }}" 
+                       class="btn btn-outline-secondary {% if status_filter == 'all' %}active{% endif %}">
+                        Все
+                    </a>
+                    <a href="{{ url_for('orders', status='pending') }}" 
+                       class="btn btn-outline-warning {% if status_filter == 'pending' %}active{% endif %}">
+                        Ожидает
+                    </a>
+                    <a href="{{ url_for('orders', status='preparing') }}" 
+                       class="btn btn-outline-info {% if status_filter == 'preparing' %}active{% endif %}">
+                        Готовится
+                    </a>
+                    <a href="{{ url_for('orders', status='ready') }}" 
+                       class="btn btn-outline-success {% if status_filter == 'ready' %}active{% endif %}">
+                        Готов
+                    </a>
+                    <a href="{{ url_for('orders', status='completed') }}" 
+                       class="btn btn-outline-primary {% if status_filter == 'completed' %}active{% endif %}">
+                        Завершен
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if orders %}
+<div class="row">
+    {% for order in orders %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">
+                        <a href="{{ url_for('order_details', order_id=order.id) }}" class="text-decoration-none">
+                            Заказ #{{ order.id }}
+                        </a>
+                    </h5>
+                    <span class="badge bg-{% if order.status == 'pending' %}warning{% elif order.status == 'preparing' %}info{% elif order.status == 'ready' %}success{% elif order.status == 'completed' %}primary{% else %}secondary{% endif %}">
+                        {% if order.status == 'pending' %}
+                            <i class="fas fa-clock me-1"></i>Ожидает
+                        {% elif order.status == 'preparing' %}
+                            <i class="fas fa-fire me-1"></i>Готовится
+                        {% elif order.status == 'ready' %}
+                            <i class="fas fa-check me-1"></i>Готов
+                        {% elif order.status == 'completed' %}
+                            <i class="fas fa-check-circle me-1"></i>Завершен
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <p class="card-text">
+                    <i class="fas fa-chair me-1"></i>
+                    Стол {{ order.table.number }}
+                </p>
+                
+                {% if order.customer_name %}
+                <p class="card-text">
+                    <i class="fas fa-user me-1"></i>
+                    {{ order.customer_name }}
+                </p>
+                {% endif %}
+                
+                <p class="card-text">
+                    <i class="fas fa-utensils me-1"></i>
+                    {{ order.order_items|length }} позиций
+                </p>
+                
+                <p class="card-text">
+                    <strong class="text-success">{{ "%.0f"|format(order.total_amount) }} ₽</strong>
+                </p>
+                
+                <p class="card-text">
+                    <small class="text-muted">
+                        {{ order.created_at.strftime('%d.%m.%Y %H:%M') }}
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+    <h4 class="text-muted">
+        {% if status_filter == 'all' %}
+            Пока нет заказов
+        {% else %}
+            Нет заказов с таким статусом
+        {% endif %}
+    </h4>
+    <p class="text-muted">
+        {% if status_filter == 'all' %}
+            Создайте первый заказ
+        {% else %}
+            Попробуйте изменить фильтр
+        {% endif %}
+    </p>
+    <a href="{{ url_for('new_order') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Новый заказ
+    </a>
+</div>
+{% endif %}
+{% endblock %}

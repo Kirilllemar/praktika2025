@@ -1,0 +1,92 @@
+{% extends "simple/base.html" %}
+
+{% block title %}Столы - Система управления кафе{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Столы</h1>
+            <a href="{{ url_for('add_table') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Добавить стол
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if tables %}
+<div class="row">
+    {% for table in tables %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title">
+                            <i class="fas fa-chair me-2 text-primary"></i>Стол {{ table.number }}
+                        </h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-users me-1"></i>
+                            Вместимость: {{ table.capacity }} человек
+                        </p>
+                    </div>
+                    <div>
+                        {% if table.is_occupied %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times me-1"></i>Занят
+                            </span>
+                        {% else %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>Свободен
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Статистика столов
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4 class="text-primary">{{ tables|length }}</h4>
+                        <p class="text-muted mb-0">Всего столов</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-success">{{ tables|selectattr('is_occupied', 'equalto', False)|list|length }}</h4>
+                        <p class="text-muted mb-0">Свободных</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-danger">{{ tables|selectattr('is_occupied', 'equalto', True)|list|length }}</h4>
+                        <p class="text-muted mb-0">Занятых</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-info">{{ tables|sum(attribute='capacity') }}</h4>
+                        <p class="text-muted mb-0">Общая вместимость</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-chair fa-3x text-muted mb-3"></i>
+    <h4 class="text-muted">Пока нет столов</h4>
+    <p class="text-muted">Добавьте столы для приема гостей</p>
+    <a href="{{ url_for('add_table') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Добавить стол
+    </a>
+</div>
+{% endif %}
+{% endblock %}

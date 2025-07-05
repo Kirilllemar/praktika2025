@@ -1,0 +1,167 @@
+{% extends "simple/base.html" %}
+
+{% block title %}Новый заказ - Система управления кафе{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Новый заказ</h1>
+    </div>
+</div>
+
+<form method="POST" id="orderForm">
+    <div class="row">
+        <!-- Информация о заказе -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Информация о заказе
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="table_id" class="form-label">Стол *</label>
+                        <select class="form-select" id="table_id" name="table_id" required>
+                            <option value="">Выберите стол</option>
+                            {% for table in available_tables %}
+                                <option value="{{ table.id }}">
+                                    Стол {{ table.number }} ({{ table.capacity }} мест)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="customer_name" class="form-label">Имя клиента</label>
+                        <input type="text" class="form-control" id="customer_name" name="customer_name" placeholder="Необязательно">
+                    </div>
+
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Итого:</h6>
+                            <div class="d-flex justify-content-between">
+                                <span>Сумма:</span>
+                                <strong id="totalAmount">0 ₽</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if not available_tables %}
+            <div class="alert alert-warning mt-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Нет свободных столов
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Меню -->
+        <div class="col-lg-8">
+            {% for category in categories %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tag me-2"></i>{{ category.name }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% set category_items = menu_items | selectattr('category_id', 'equalto', category.id) | list %}
+                    {% if category_items %}
+                        <div class="row">
+                            {% for item in category_items %}
+                            <div class="col-md-6 mb-3">
+                                <div class="border rounded p-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ item.name }}</h6>
+                                            {% if item.description %}
+                                                <p class="text-muted small mb-2">{{ item.description }}</p>
+                                            {% endif %}
+                                            <strong class="text-success">{{ "%.0f"|format(item.price) }} ₽</strong>
+                                        </div>
+                                        <div class="ms-3">
+                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity({{ item.id }}, -1)">-</button>
+                                                <input type="number" class="form-control text-center" 
+                                                       name="quantity_{{ item.id }}" 
+                                                       id="quantity_{{ item.id }}" 
+                                                       value="0" min="0" max="99"
+                                                       data-price="{{ item.price }}"
+                                                       onchange="updateTotal()">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="changeQuantity({{ item.id }}, 1)">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">В этой категории нет блюд</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                    <i class="fas fa-plus me-2"></i>Создать заказ
+                </button>
+                <a href="{{ url_for('orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Отмена
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% if not categories or not menu_items %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>
+    Для создания заказов нужно сначала добавить блюда в меню
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function changeQuantity(itemId, change) {
+    const input = document.getElementById('quantity_' + itemId);
+    const currentValue = parseInt(input.value) || 0;
+    const newValue = Math.max(0, Math.min(99, currentValue + change));
+    input.value = newValue;
+    updateTotal();
+}
+
+function updateTotal() {
+    let total = 0;
+    const inputs = document.querySelectorAll('input[name^="quantity_"]');
+    
+    inputs.forEach(input => {
+        const quantity = parseInt(input.value) || 0;
+        const price = parseFloat(input.dataset.price) || 0;
+        total += quantity * price;
+    });
+    
+    document.getElementById('totalAmount').textContent = Math.round(total) + ' ₽';
+    
+    // Включаем кнопку отправки только если есть выбранные блюда и стол
+    const tableSelected = document.getElementById('table_id').value;
+    const hasItems = total > 0;
+    document.getElementById('submitBtn').disabled = !(tableSelected && hasItems);
+}
+
+// Обновляем итог при изменении стола
+document.getElementById('table_id').addEventListener('change', updateTotal);
+
+// Добавляем обработчики для всех полей количества
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('input[name^="quantity_"]');
+    inputs.forEach(input => {
+        input.addEventListener('change', updateTotal);
+    });
+});
+</script>
+{% endblock %}

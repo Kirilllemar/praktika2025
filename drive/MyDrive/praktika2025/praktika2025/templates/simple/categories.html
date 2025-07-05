@@ -1,0 +1,49 @@
+{% extends "simple/base.html" %}
+
+{% block title %}Категории - Система управления кафе{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Категории</h1>
+            <a href="{{ url_for('add_category') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Добавить категорию
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if categories %}
+<div class="row">
+    {% for category in categories %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-tag me-2 text-primary"></i>{{ category.name }}
+                </h5>
+                {% if category.description %}
+                    <p class="card-text text-muted">{{ category.description }}</p>
+                {% endif %}
+                <p class="card-text">
+                    <small class="text-muted">
+                        Блюд в категории: {{ category.menu_items|length }}
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+    <h4 class="text-muted">Пока нет категорий</h4>
+    <p class="text-muted">Создайте первую категорию для организации меню</p>
+    <a href="{{ url_for('add_category') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Добавить категорию
+    </a>
+</div>
+{% endif %}
+{% endblock %}

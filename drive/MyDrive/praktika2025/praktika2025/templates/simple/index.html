@@ -1,0 +1,195 @@
+{% extends "simple/base.html" %}
+
+{% block title %}Главная - Система управления кафе{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Система управления кафе</h1>
+    </div>
+</div>
+
+<!-- Статистические карточки -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-0">{{ total_orders }}</h5>
+                        <p class="card-text">Всего заказов</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-receipt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-0">{{ active_orders }}</h5>
+                        <p class="card-text">Активные заказы</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-0">{{ available_tables }}</h5>
+                        <p class="card-text">Свободные столы</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chair fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-0">{{ "%.0f"|format(today_revenue) }} ₽</h5>
+                        <p class="card-text">Выручка сегодня</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-ruble-sign fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Быстрые действия -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Быстрые действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('new_order') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Новый заказ
+                    </a>
+                    <a href="{{ url_for('add_menu_item') }}" class="btn btn-success">
+                        <i class="fas fa-utensils me-2"></i>Добавить блюдо
+                    </a>
+                    <a href="{{ url_for('add_table') }}" class="btn btn-info">
+                        <i class="fas fa-chair me-2"></i>Добавить стол
+                    </a>
+                    <a href="{{ url_for('add_category') }}" class="btn btn-secondary">
+                        <i class="fas fa-tag me-2"></i>Добавить категорию
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Последние заказы -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Последние заказы
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Стол</th>
+                                    <th>Статус</th>
+                                    <th>Сумма</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('order_details', order_id=order.id) }}" class="text-decoration-none">
+                                            #{{ order.id }}
+                                        </a>
+                                    </td>
+                                    <td>Стол {{ order.table.number }}</td>
+                                    <td>
+                                        <span class="status-{{ order.status }}">
+                                            {% if order.status == 'pending' %}
+                                                <i class="fas fa-clock me-1"></i>Ожидает
+                                            {% elif order.status == 'preparing' %}
+                                                <i class="fas fa-fire me-1"></i>Готовится
+                                            {% elif order.status == 'ready' %}
+                                                <i class="fas fa-check me-1"></i>Готов
+                                            {% elif order.status == 'completed' %}
+                                                <i class="fas fa-check-circle me-1"></i>Завершен
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.0f"|format(order.total_amount) }} ₽</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Пока нет заказов</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Сегодняшняя статистика -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>Сегодня
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border-end">
+                            <h3 class="text-primary">{{ today_orders }}</h3>
+                            <p class="text-muted mb-0">Заказов</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border-end">
+                            <h3 class="text-success">{{ "%.0f"|format(today_revenue) }} ₽</h3>
+                            <p class="text-muted mb-0">Выручка</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 class="text-info">{{ "%.0f"|format(today_revenue / today_orders if today_orders > 0 else 0) }} ₽</h3>
+                        <p class="text-muted mb-0">Средний чек</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

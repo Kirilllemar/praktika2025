@@ -1,0 +1,169 @@
+{% extends "simple/base.html" %}
+
+{% block title %}Отчеты - Система управления кафе{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Отчеты</h1>
+    </div>
+</div>
+
+<!-- Продажи за неделю -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Продажи за последние 7 дней
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if week_sales %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th class="text-center">Заказов</th>
+                                    <th class="text-end">Выручка</th>
+                                    <th class="text-end">Средний чек</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in week_sales %}
+                                <tr>
+                                    <td>{{ sale.date.strftime('%d.%m.%Y') if sale.date else 'Н/Д' }}</td>
+                                    <td class="text-center">{{ sale.orders_count or 0 }}</td>
+                                    <td class="text-end">{{ "%.0f"|format(sale.total or 0) }} ₽</td>
+                                    <td class="text-end">
+                                        {{ "%.0f"|format((sale.total or 0) / (sale.orders_count or 1)) }} ₽
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-primary">
+                                    <th>Итого:</th>
+                                    <th class="text-center">{{ week_sales|sum(attribute='orders_count') or 0 }}</th>
+                                    <th class="text-end">{{ "%.0f"|format(week_sales|sum(attribute='total') or 0) }} ₽</th>
+                                    <th class="text-end">
+                                        {% set total_orders = week_sales|sum(attribute='orders_count') or 0 %}
+                                        {% set total_revenue = week_sales|sum(attribute='total') or 0 %}
+                                        {{ "%.0f"|format(total_revenue / total_orders if total_orders > 0 else 0) }} ₽
+                                    </th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Нет данных о продажах за последние 7 дней</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Популярные блюда -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-star me-2"></i>Топ-5 популярных блюд
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if popular_items %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Блюдо</th>
+                                    <th class="text-center">Заказано</th>
+                                    <th class="text-end">Выручка</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in popular_items %}
+                                <tr>
+                                    <td>
+                                        {% if loop.index == 1 %}
+                                            <i class="fas fa-trophy text-warning"></i>
+                                        {% elif loop.index == 2 %}
+                                            <i class="fas fa-medal text-secondary"></i>
+                                        {% elif loop.index == 3 %}
+                                            <i class="fas fa-award text-danger"></i>
+                                        {% else %}
+                                            {{ loop.index }}
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ item.name }}</strong></td>
+                                    <td class="text-center">{{ item.total_ordered }} раз</td>
+                                    <td class="text-end">{{ "%.0f"|format(item.total_revenue) }} ₽</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Нет данных о популярных блюдах</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Быстрая статистика -->
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body text-center">
+                <h4>{{ week_sales|sum(attribute='orders_count') or 0 }}</h4>
+                <p class="mb-0">Заказов за неделю</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body text-center">
+                <h4>{{ "%.0f"|format(week_sales|sum(attribute='total') or 0) }} ₽</h4>
+                <p class="mb-0">Выручка за неделю</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body text-center">
+                {% set total_orders = week_sales|sum(attribute='orders_count') or 0 %}
+                {% set total_revenue = week_sales|sum(attribute='total') or 0 %}
+                <h4>{{ "%.0f"|format(total_revenue / total_orders if total_orders > 0 else 0) }} ₽</h4>
+                <p class="mb-0">Средний чек</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body text-center">
+                <h4>{{ popular_items|length }}</h4>
+                <p class="mb-0">Популярных блюд</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Информация -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Информация:</strong> Отчеты показывают данные только по завершенным заказам. 
+            Для более детальной аналитики рассмотрите возможность интеграции с внешними системами отчетности.
+        </div>
+    </div>
+</div>
+{% endblock %}

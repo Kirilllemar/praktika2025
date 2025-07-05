@@ -1,0 +1,76 @@
+{% extends "simple/base.html" %}
+
+{% block title %}Меню - Система управления кафе{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Меню</h1>
+            <a href="{{ url_for('add_menu_item') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Добавить блюдо
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Меню по категориям -->
+{% for category in categories %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-tag me-2"></i>{{ category.name }}
+            {% if category.description %}
+                <small class="text-muted">{{ category.description }}</small>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% set category_items = menu_items | selectattr('category_id', 'equalto', category.id) | list %}
+        {% if category_items %}
+            <div class="row">
+                {% for item in category_items %}
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="card-title mb-2">
+                                        {{ item.name }}
+                                        {% if not item.is_available %}
+                                            <span class="badge bg-secondary ms-2">Недоступно</span>
+                                        {% endif %}
+                                    </h6>
+                                    {% if item.description %}
+                                        <p class="card-text text-muted small mb-2">{{ item.description }}</p>
+                                    {% endif %}
+                                    <p class="card-text">
+                                        <strong class="text-success">{{ "%.0f"|format(item.price) }} ₽</strong>
+                                    </p>
+                                </div>
+                                <div class="ms-3">
+                                    <a href="{{ url_for('edit_menu_item', item_id=item.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">В этой категории пока нет блюд</p>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="text-center">
+    <p class="text-muted">Пока нет категорий</p>
+    <a href="{{ url_for('add_category') }}" class="btn btn-primary">
+        Добавить первую категорию
+    </a>
+</div>
+{% endfor %}
+{% endblock %}
