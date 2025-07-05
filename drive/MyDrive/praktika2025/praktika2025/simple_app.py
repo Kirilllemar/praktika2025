@@ -1,12 +1,8 @@
-"""
-Простая система управления кафе
-"""
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date
 import os
 
-# Инициализация приложения
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'simple-cafe-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///simple_cafe.db'
@@ -14,7 +10,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Модели данных
 class Category(db.Model):
     __tablename__ = 'categories'
     
@@ -62,7 +57,6 @@ class Order(db.Model):
     total_amount = db.Column(db.Float, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Отношения
     table = db.relationship('Table', backref='orders')
     order_items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
     
@@ -78,26 +72,21 @@ class OrderItem(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)
     
-    # Отношения
     menu_item = db.relationship('MenuItem', backref='order_items')
     
     @property
     def total_price(self):
         return self.quantity * self.price
 
-# Главная страница
 @app.route('/')
 def index():
-    """Главная страница с основной статистикой"""
     total_orders = Order.query.count()
     active_orders = Order.query.filter(Order.status.in_(['pending', 'preparing', 'ready'])).count()
     available_tables = Table.query.filter_by(is_occupied=False).count()
     
-    # Заказы за сегодня
     today = date.today()
     today_orders = Order.query.filter(db.func.date(Order.created_at) == today).count()
     
-    # Выручка за сегодня
     today_revenue = db.session.query(db.func.sum(Order.total_amount)).filter(
         db.func.date(Order.created_at) == today,
         Order.status == 'completed'
@@ -114,17 +103,14 @@ def index():
                          today_revenue=today_revenue,
                          recent_orders=recent_orders)
 
-# Управление меню
 @app.route('/menu')
 def menu():
-    """Страница меню"""
     categories = Category.query.all()
     menu_items = MenuItem.query.all()
     return render_template('simple/menu.html', categories=categories, menu_items=menu_items)
 
 @app.route('/menu/add', methods=['GET', 'POST'])
 def add_menu_item():
-    """Добавить блюдо"""
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
@@ -149,7 +135,6 @@ def add_menu_item():
 
 @app.route('/menu/edit/<int:item_id>', methods=['GET', 'POST'])
 def edit_menu_item(item_id):
-    """Редактировать блюдо"""
     item = MenuItem.query.get_or_404(item_id)
     
     if request.method == 'POST':
@@ -167,16 +152,13 @@ def edit_menu_item(item_id):
     categories = Category.query.all()
     return render_template('simple/edit_menu_item.html', item=item, categories=categories)
 
-# Управление категориями
 @app.route('/categories')
 def categories():
-    """Страница категорий"""
     categories = Category.query.all()
     return render_template('simple/categories.html', categories=categories)
 
 @app.route('/categories/add', methods=['GET', 'POST'])
 def add_category():
-    """Добавить категорию"""
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
@@ -190,21 +172,17 @@ def add_category():
     
     return render_template('simple/add_category.html')
 
-# Управление столами
 @app.route('/tables')
 def tables():
-    """Страница столов"""
     tables = Table.query.order_by(Table.number).all()
     return render_template('simple/tables.html', tables=tables)
 
 @app.route('/tables/add', methods=['GET', 'POST'])
 def add_table():
-    """Добавить стол"""
     if request.method == 'POST':
         number = int(request.form['number'])
         capacity = int(request.form['capacity'])
         
-        # Проверяем уникальность номера
         existing_table = Table.query.filter_by(number=number).first()
         if existing_table:
             flash('Стол с таким номером уже существует!', 'error')
@@ -219,10 +197,8 @@ def add_table():
     
     return render_template('simple/add_table.html')
 
-# Управление заказами
 @app.route('/orders')
 def orders():
-    """Страница заказов"""
     status_filter = request.args.get('status', 'all')
     
     query = Order.query
@@ -234,17 +210,14 @@ def orders():
 
 @app.route('/orders/new', methods=['GET', 'POST'])
 def new_order():
-    """Создать новый заказ"""
     if request.method == 'POST':
         table_id = int(request.form['table_id'])
         customer_name = request.form.get('customer_name', '')
         
-        # Создаем заказ
         order = Order(table_id=table_id, customer_name=customer_name)
         db.session.add(order)
         db.session.flush()  # Получаем ID заказа
         
-        # Добавляем позиции заказа
         total_amount = 0
         for key in request.form.keys():
             if key.startswith('quantity_'):
@@ -264,7 +237,6 @@ def new_order():
         
         order.total_amount = total_amount
         
-        # Отмечаем стол как занятый
         table = Table.query.get(table_id)
         table.is_occupied = True
         
@@ -273,7 +245,6 @@ def new_order():
         flash('Заказ успешно создан!', 'success')
         return redirect(url_for('order_details', order_id=order.id))
     
-    # Получаем данные для формы
     available_tables = Table.query.filter_by(is_occupied=False).all()
     categories = Category.query.all()
     menu_items = MenuItem.query.filter_by(is_available=True).all()
@@ -285,19 +256,16 @@ def new_order():
 
 @app.route('/orders/<int:order_id>')
 def order_details(order_id):
-    """Детали заказа"""
     order = Order.query.get_or_404(order_id)
     return render_template('simple/order_details.html', order=order)
 
 @app.route('/orders/<int:order_id>/update_status', methods=['POST'])
 def update_order_status(order_id):
-    """Обновить статус заказа"""
     order = Order.query.get_or_404(order_id)
     new_status = request.form['status']
     
     order.status = new_status
     
-    # Если заказ завершен, освобождаем стол
     if new_status == 'completed':
         order.table.is_occupied = False
     
@@ -306,11 +274,9 @@ def update_order_status(order_id):
     flash('Статус заказа обновлен!', 'success')
     return redirect(url_for('order_details', order_id=order_id))
 
-# Простые отчеты
 @app.route('/reports')
 def reports():
-    """Простые отчеты"""
-    # Продажи за последние 7 дней
+    
     from datetime import timedelta
     
     week_ago = datetime.utcnow() - timedelta(days=7)
@@ -325,7 +291,6 @@ def reports():
         db.func.date(Order.created_at)
     ).order_by('date').all()
     
-    # Популярные блюда
     popular_items = db.session.query(
         MenuItem.name,
         db.func.sum(OrderItem.quantity).label('total_ordered'),
@@ -340,10 +305,8 @@ def reports():
                          week_sales=week_sales,
                          popular_items=popular_items)
 
-# API для простых запросов
 @app.route('/api/menu')
 def api_menu():
-    """API меню"""
     categories = Category.query.all()
     menu_data = []
     
@@ -367,7 +330,6 @@ def api_menu():
 
 @app.route('/api/tables/status')
 def api_tables_status():
-    """API статуса столов"""
     tables = Table.query.all()
     return jsonify([{
         'id': table.id,
@@ -376,13 +338,10 @@ def api_tables_status():
         'is_occupied': table.is_occupied
     } for table in tables])
 
-# Инициализация данных
 def init_sample_data():
-    """Создание тестовых данных"""
     if Category.query.count() > 0:
         return
     
-    # Создаем категории
     categories = [
         Category(name='Горячие блюда', description='Основные блюда'),
         Category(name='Супы', description='Первые блюда'),
@@ -396,7 +355,6 @@ def init_sample_data():
     
     db.session.commit()
     
-    # Создаем блюда
     menu_items = [
         MenuItem(name='Борщ', price=150, category_id=2, description='Традиционный борщ'),
         MenuItem(name='Солянка', price=180, category_id=2, description='Мясная солянка'),
@@ -410,7 +368,6 @@ def init_sample_data():
     for item in menu_items:
         db.session.add(item)
     
-    # Создаем столы
     tables = [
         Table(number=1, capacity=2),
         Table(number=2, capacity=4),
@@ -431,8 +388,8 @@ if __name__ == '__main__':
         init_sample_data()
     
     print("=" * 50)
-    print("🍽️  ПРОСТАЯ СИСТЕМА УПРАВЛЕНИЯ КАФЕ")
-    print("🌐 Адрес: http://localhost:5000")
+    print("ПРОСТАЯ СИСТЕМА УПРАВЛЕНИЯ КАФЕ")
+    print("Адрес: http://localhost:5000")
     print("=" * 50)
     
     app.run(debug=True, host='0.0.0.0', port=5000)
